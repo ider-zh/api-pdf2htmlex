@@ -1,0 +1,41 @@
+#!/home/ider/.local/share/virtualenvs/api-pdf2htmlex-wxY90yvb/bin/python
+
+import requests
+import sys
+import json
+import zipfile
+import tempfile
+
+api_url = 'http://localhost:5000/pdf2htmlEX'
+
+file_desc = sys.argv[-1]
+argv = sys.argv
+if '--dest-dir' in argv:
+    idx = argv.index('--dest-dir')
+    dst = argv[idx+1] if not argv[idx+1].startswith('-') else None
+    del(argv[idx])
+    del(argv[idx])
+else:
+    dst = './'
+src = argv[-1] if not argv[-1].startswith('-') else None
+assert(src)
+
+del(argv[0])
+del(argv[-1])
+
+files = {'file': open(src, 'rb')}
+data= {'command':json.dumps(' '.join(argv))}
+req = requests.post(api_url, files=files, data=data)
+# print(req.text)
+if req.status_code != 200:
+    print(req.text)
+assert req.status_code == 200
+
+fp = tempfile.TemporaryFile()
+fp.write(req.content)
+fp.seek(0)
+
+with zipfile.ZipFile(fp, 'r') as myzip:
+    myzip.extractall(dst)
+
+# print(sys.argv)
