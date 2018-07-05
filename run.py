@@ -16,7 +16,6 @@ app.config['COUNT'] = 0
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['COUNT'] = 0
-app.debug = True
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -72,4 +71,4 @@ def pdf2htmlEX(pdf_path,command):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0",port=5000)

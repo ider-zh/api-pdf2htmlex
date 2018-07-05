@@ -13,8 +13,9 @@ RUN sed -i 's/security.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
     apt-get -qq -y install git python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install flask requests && \
+    pip3 install flask requests && \
     git clone https://gitee.com/ider001/api-pdf2htmlex.git && \
-    cd api-pdf2htmlex && \
+    cd api-pdf2htmlex
 
-RUN python3 run.py
+EXPOSE 5000
+CMD python3 api-pdf2htmlex/run.py
