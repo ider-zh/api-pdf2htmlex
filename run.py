@@ -1,6 +1,6 @@
 #!/home/ider/anaconda3/bin/python
 
-import os, time, zipfile, tempfile, uuid, shutil, subprocess
+import os, time, zipfile, tempfile, uuid, shutil, subprocess, json
 from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 app = Flask(__name__)
@@ -36,7 +36,7 @@ def upload_file():
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             try:
-                fp = pdf2htmlEX(file_path, command)
+                fp = pdf2htmlEX(file_path, json.loads(command))
             except Exception as e:
                 return str(e),500
             app.config['COUNT'] += 1
@@ -50,7 +50,8 @@ def pdf2htmlEX(pdf_path,command):
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], str(uuid.uuid4()))
     os.mkdir(folder_path)
     cmd = [bin,]
-    cmd.extend(command.split(' '))
+    if command:
+        cmd.extend(command.split(' '))
 
     cmd.extend(['--dest-dir',folder_path,pdf_path])
 
@@ -71,4 +72,4 @@ def pdf2htmlEX(pdf_path,command):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0",port=5000)
+    app.run(debug=True,host="0.0.0.0",port=5000)
