@@ -6,18 +6,21 @@ import json
 import zipfile
 import tempfile
 
-api_urls = ['http://localhost:5000/pdf2htmlEX',]
+api_urls = ['http://localhost:5000/pdf2htmlEX','http://192.168.1.220:5000/pdf2htmlEX']
 
 def remote_convert(src, argv):
-    files = {'file': open(src, 'rb')}
-    data= {'command':json.dumps(' '.join(argv))}
 
     for url in api_urls:
-        req = requests.post(url, files=files, data=data)
-        if req.req.status_code == 200:
+        try:
+            files = {'file': open(src, 'rb')}
+            data= {'command':json.dumps(' '.join(argv))}
+            req = requests.post(url, files=files, data=data)
+        except requests.exceptions.ConnectionError:
+            continue
+        if req.status_code == 200:
             break
     else:
-        raise Exception('remote api is not available!')
+        raise Exception('remote api is not available! %s'%req.text)
     fp = tempfile.TemporaryFile()
     fp.write(req.content)
     fp.seek(0)

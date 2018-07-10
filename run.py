@@ -3,8 +3,11 @@
 import os, time, zipfile, tempfile, uuid, shutil, subprocess, json
 from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
-app = Flask(__name__)
+from concurrent.futures import ThreadPoolExecutor
 
+app = Flask(__name__)
+executor_large = ThreadPoolExecutor(max_workers=1)
+executor_small   = ThreadPoolExecutor(max_workers=5)
 
 UPLOAD_FOLDER = '/tmp'
 bin = "/usr/local/bin/pdf2htmlEX"
@@ -13,6 +16,9 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
+app.config['executor_large'] = executor_large
+app.config['executor_small'] = executor_small
+
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['COUNT'] = 0
@@ -46,6 +52,7 @@ def upload_file():
         return 'Completing %s document conversions'%app.config['COUNT']
     return "unknow error", 500
 
+
 def pdf2htmlEX(pdf_path,command):
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], str(uuid.uuid4()))
     os.mkdir(folder_path)
@@ -55,15 +62,23 @@ def pdf2htmlEX(pdf_path,command):
 
     cmd.extend(['--dest-dir',folder_path,pdf_path])
 
-    subprocess.check_output(cmd)
 
+    if os.path.getsize(pdf_path) > 1:
+        app.config['executor_large'].submit(subprocess.check_output, cmd)
+    else:
+        app.config['executor_small'].submit(subprocess.check_output, cmd)
+
+    # subprocess.check_output(cmd)
     # shutil.copy(pdf_path,os.path.join(pdf_path,folder_path))
 
     fp = tempfile.TemporaryFile()
     with zipfile.ZipFile(fp, 'w') as myzip:
         for obj in os.walk(folder_path):
-            for file in obj[2]:
-                file_path = obj[0] + os.sep + file
+            for file_name in obj[2]:
+                file_path = obj[0] + os.sep + file_name
+                # 过滤大量异常 png
+                if file_name.endswith('.png') and os.path.getsize(file_path) < 1024:
+                    continue
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
     shutil.rmtree(folder_path)
     os.remove(pdf_path)
