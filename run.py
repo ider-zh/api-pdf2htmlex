@@ -39,10 +39,11 @@ def upload_file():
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file_uuid =  str(uuid.uuid4())
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_uuid+'.pdf')
             file.save(file_path)
             try:
-                fp = pdf2htmlEX(file_path, json.loads(command))
+                fp = pdf2htmlEX(file_path, json.loads(command), file_uuid)
             except Exception as e:
                 return str(e),500
             app.config['COUNT'] += 1
@@ -53,8 +54,8 @@ def upload_file():
     return "unknow error", 500
 
 
-def pdf2htmlEX(pdf_path,command):
-    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], str(uuid.uuid4()))
+def pdf2htmlEX(pdf_path,command,file_uuid):
+    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file_uuid)
     os.mkdir(folder_path)
     cmd = [bin,]
     if command:
@@ -64,9 +65,10 @@ def pdf2htmlEX(pdf_path,command):
 
 
     if os.path.getsize(pdf_path) > 1:
-        app.config['executor_large'].submit(subprocess.check_output, cmd)
+        ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
     else:
-        app.config['executor_small'].submit(subprocess.check_output, cmd)
+        ret = app.config['executor_small'].submit(subprocess.check_output, cmd)
+    ret.result()
 
     # subprocess.check_output(cmd)
     # shutil.copy(pdf_path,os.path.join(pdf_path,folder_path))

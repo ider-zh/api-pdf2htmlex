@@ -21,6 +21,7 @@ def remote_convert(src, argv):
             break
     else:
         raise Exception('remote api is not available! %s'%req.text)
+        
     fp = tempfile.TemporaryFile()
     fp.write(req.content)
     fp.seek(0)
