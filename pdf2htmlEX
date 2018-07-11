@@ -1,4 +1,4 @@
-#!/home/ider/.local/share/virtualenvs/api-pdf2htmlex-wxY90yvb/bin/python
+#!/usr/bin/python3
 
 import requests
 import sys
