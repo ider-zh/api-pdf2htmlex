@@ -6,8 +6,6 @@ from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
-executor_large = ThreadPoolExecutor(max_workers=1)
-executor_small   = ThreadPoolExecutor(max_workers=5)
 
 UPLOAD_FOLDER = '/tmp'
 bin = "/usr/local/bin/pdf2htmlEX"
@@ -16,8 +14,8 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
-app.config['executor_large'] = executor_large
-app.config['executor_small'] = executor_small
+app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
+app.config['executor_small'] = ThreadPoolExecutor(max_workers=5)
 
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -63,8 +61,7 @@ def pdf2htmlEX(pdf_path,command,file_uuid):
 
     cmd.extend(['--dest-dir',folder_path,pdf_path])
 
-
-    if os.path.getsize(pdf_path) > 1:
+    if os.path.getsize(pdf_path) > 2 * 1024 * 1024:
         ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
     else:
         ret = app.config['executor_small'].submit(subprocess.check_output, cmd)
