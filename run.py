@@ -40,7 +40,7 @@ def upload_file():
             pdf_folder_uuid =  str(uuid.uuid4())
             pdf_floder_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_folder_uuid)
             pdf_path = os.path.join(pdf_floder_path, filename)
-
+            os.mkdir(pdf_floder_path)
             file.save(pdf_path)
             try:
                 fp = pdf2htmlEX(pdf_path, json.loads(command))
@@ -80,10 +80,11 @@ def pdf2htmlEX(pdf_path,command):
     with zipfile.ZipFile(fp, 'w') as myzip:
         for obj in os.walk(folder_path):
             for file_name in obj[2]:
-                file_path = obj[0] + os.sep + file_name
                 # 不要 png
                 if file_name.endswith('.png'):
                     continue
+                
+                file_path = obj[0] + os.sep + file_name
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
     shutil.rmtree(folder_path)
     os.remove(pdf_path)
