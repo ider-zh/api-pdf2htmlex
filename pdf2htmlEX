@@ -5,10 +5,12 @@ import sys
 import json
 import zipfile
 import tempfile
+import subprocess
 
 api_urls = ['http://localhost:5000/pdf2htmlEX','http://192.168.1.220:5000/pdf2htmlEX']
+BIN = "/usr/local/bin/pdf2htmlEX"
 
-def remote_convert(src, argv):
+def remote_convert(src, dst, argv):
 
     for url in api_urls:
         try:
@@ -18,34 +20,42 @@ def remote_convert(src, argv):
         except requests.exceptions.ConnectionError:
             continue
         if req.status_code == 200:
-            break
+            fp = tempfile.TemporaryFile()
+            fp.write(req.content)
+            fp.seek(0)
+            with zipfile.ZipFile(fp, 'r') as myzip:
+                myzip.extractall(dst)
+            return
     else:
-        raise Exception('remote api is not available! %s'%req.text)
-        
-    fp = tempfile.TemporaryFile()
-    fp.write(req.content)
-    fp.seek(0)
-    return fp
+        print('remote api is not available!')
+        # raise Exception('remote api is not available! %s'%req.text)
+        self_convert()
 
 
-file_desc = sys.argv[-1]
-argv = sys.argv
-if '--dest-dir' in argv:
-    idx = argv.index('--dest-dir')
-    dst = argv[idx+1] if not argv[idx+1].startswith('-') else None
-    del(argv[idx])
-    del(argv[idx])
-else:
-    dst = './'
-src = argv[-1] if not argv[-1].startswith('-') else None
-assert(src)
 
-del(argv[0])
-del(argv[-1])
+def main():
+    file_desc = sys.argv[-1]
+    argv = sys.argv.copy()
+    if '--dest-dir' in argv:
+        idx = argv.index('--dest-dir')
+        dst = argv[idx+1] if not argv[idx+1].startswith('-') else None
+        del(argv[idx])
+        del(argv[idx])
+    else:
+        dst = './'
+    src = argv[-1] if not argv[-1].startswith('-') else None
+    assert(src)
 
-fp = remote_convert(src, argv)
+    del(argv[0])
+    del(argv[-1])
 
-with zipfile.ZipFile(fp, 'r') as myzip:
-    myzip.extractall(dst)
+    remote_convert(src, dst, argv)
 
-# print(sys.argv)
+
+def self_convert():
+    cmd = [BIN,]
+    cmd.extend(sys.argv[1:])
+    subprocess.check_output(cmd)
+
+if __name__ == '__main__':
+    main()
