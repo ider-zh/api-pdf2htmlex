@@ -37,13 +37,18 @@ def upload_file():
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_uuid =  str(uuid.uuid4())
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_uuid+'.pdf')
-            file.save(file_path)
+            pdf_folder_uuid =  str(uuid.uuid4())
+            pdf_floder_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_folder_uuid)
+            pdf_path = os.path.join(pdf_floder_path, filename)
+
+            file.save(pdf_path)
             try:
-                fp = pdf2htmlEX(file_path, json.loads(command), file_uuid)
+                fp = pdf2htmlEX(pdf_path, json.loads(command))
             except Exception as e:
                 return str(e),500
+            finally:
+                shutil.rmtree(pdf_floder_path)
+
             app.config['COUNT'] += 1
             return send_file(fp,as_attachment=True,attachment_filename='%s.zip'%filename.split('.')[0])
             # return "ok" + command, 200
@@ -52,8 +57,9 @@ def upload_file():
     return "unknow error", 500
 
 
-def pdf2htmlEX(pdf_path,command,file_uuid):
-    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file_uuid)
+def pdf2htmlEX(pdf_path,command):
+    out_folder_uuid =  str(uuid.uuid4())
+    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], out_folder_uuid)
     os.mkdir(folder_path)
     cmd = [bin,]
     if command:
@@ -75,8 +81,8 @@ def pdf2htmlEX(pdf_path,command,file_uuid):
         for obj in os.walk(folder_path):
             for file_name in obj[2]:
                 file_path = obj[0] + os.sep + file_name
-                # 过滤大量异常 png
-                if file_name.endswith('.png') and os.path.getsize(file_path) < 1024:
+                # 不要 png
+                if file_name.endswith('.png'):
                     continue
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
     shutil.rmtree(folder_path)
