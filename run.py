@@ -16,6 +16,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
 app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
 app.config['executor_small'] = ThreadPoolExecutor(max_workers=5)
+app.config['executor_file'] = ThreadPoolExecutor(max_workers=5)
 
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -47,7 +48,7 @@ def upload_file():
             except Exception as e:
                 return str(e),500
             finally:
-                shutil.rmtree(pdf_floder_path)
+                app.config['executor_file'].submit(shutil.rmtree, pdf_floder_path)
 
             app.config['COUNT'] += 1
             return send_file(fp,as_attachment=True,attachment_filename='%s.zip'%filename.split('.')[0])
@@ -86,8 +87,7 @@ def pdf2htmlEX(pdf_path,command):
                 
                 file_path = obj[0] + os.sep + file_name
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
-    shutil.rmtree(folder_path)
-    os.remove(pdf_path)
+    app.config['executor_file'].submit(shutil.rmtree, folder_path)
     fp.seek(0)
     return fp
 
