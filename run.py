@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
+POOL_SIZE = os.environ.get('POOL_SIZE',1)
+
 UPLOAD_FOLDER = '/tmp'
 bin = "/usr/local/bin/pdf2htmlEX"
 ALLOWED_EXTENSIONS = set(['pdf',])
@@ -14,8 +16,10 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
-app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
-app.config['executor_small'] = ThreadPoolExecutor(max_workers=10)
+# app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
+# app.config['executor_small'] = ThreadPoolExecutor(max_workers=10)
+app.config['executor_worker'] = ThreadPoolExecutor(max_workers=int(POOL_SIZE))
+
 app.config['executor_file'] = ThreadPoolExecutor(max_workers=5)
 
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -68,10 +72,12 @@ def pdf2htmlEX(pdf_path,command):
 
     cmd.extend(['--dest-dir',folder_path,pdf_path])
 
-    if os.path.getsize(pdf_path) > 2 * 1024 * 1024:
-        ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
-    else:
-        ret = app.config['executor_small'].submit(subprocess.check_output, cmd)
+    # 只有一个的队列
+    # if os.path.getsize(pdf_path) > 2 * 1024 * 1024:
+    #     ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
+    # else:
+    #     ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
+    ret = app.config['executor_worker'].submit(subprocess.check_output, cmd)
     ret.result()
 
     # subprocess.check_output(cmd)
