@@ -14,7 +14,7 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
-app.config['executor_large'] = ThreadPoolExecutor(max_workers=3)
+app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
 app.config['executor_small'] = ThreadPoolExecutor(max_workers=10)
 app.config['executor_file'] = ThreadPoolExecutor(max_workers=5)
 
