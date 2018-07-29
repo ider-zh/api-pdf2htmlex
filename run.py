@@ -14,8 +14,8 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
-app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
-app.config['executor_small'] = ThreadPoolExecutor(max_workers=5)
+app.config['executor_large'] = ThreadPoolExecutor(max_workers=3)
+app.config['executor_small'] = ThreadPoolExecutor(max_workers=10)
 app.config['executor_file'] = ThreadPoolExecutor(max_workers=5)
 
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -81,11 +81,12 @@ def pdf2htmlEX(pdf_path,command):
     with zipfile.ZipFile(fp, 'w') as myzip:
         for obj in os.walk(folder_path):
             for file_name in obj[2]:
-                # 不要 png
-                if file_name.endswith('.png'):
-                    continue
-                
+
                 file_path = obj[0] + os.sep + file_name
+                #  png 过滤
+                if file_name.endswith('.png') and os.path.getsize(file_path) < 10 * 1024:
+                    continue
+
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
     app.config['executor_file'].submit(shutil.rmtree, folder_path)
     fp.seek(0)

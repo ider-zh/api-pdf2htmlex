@@ -15,7 +15,6 @@ RUN sed -i 's/security.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
     rm -rf /var/lib/apt/lists/* && \
     pip3 install flask requests
 
-MAINTAINER v2
 RUN git clone https://gitee.com/ider001/api-pdf2htmlex.git
 
 EXPOSE 5000

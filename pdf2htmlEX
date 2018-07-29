@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 import subprocess
 
-api_urls = ['http://localhost:5000/pdf2htmlEX','http://192.168.1.220:5000/pdf2htmlEX']
+api_urls = ['http://localhost:5000/pdf2htmlEX','http://lambdax.cn:5000/pdf2htmlEX']
 BIN = "/usr/local/bin/pdf2htmlEX"
 
 def remote_convert(src, dst, argv):
