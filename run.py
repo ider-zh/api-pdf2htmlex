@@ -4,10 +4,15 @@ import os, time, zipfile, tempfile, uuid, shutil, subprocess, json
 from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
+import requests
+import pychrome
+import base64
 
 app = Flask(__name__)
 
 POOL_SIZE = os.environ.get('POOL_SIZE',1)
+# chrome 提前转换 pdf
+PDF2PDF = os.environ.get('PDF2PDF')
 
 UPLOAD_FOLDER = '/tmp'
 bin = "/usr/local/bin/pdf2htmlEX"
@@ -47,12 +52,14 @@ def upload_file():
             pdf_path = os.path.join(pdf_floder_path, filename)
             os.mkdir(pdf_floder_path)
             file.save(pdf_path)
+            if PDF2PDF:
+                pdf2pdf(pdf_path)
             try:
                 fp = pdf2htmlEX(pdf_path, json.loads(command))
-            except Exception as e:
-                return str(e),500
-            finally:
                 app.config['executor_file'].submit(shutil.rmtree, pdf_floder_path)
+            except Exception as e:
+                app.config['executor_file'].submit(shutil.rmtree, pdf_floder_path)
+                return str(e),500
 
             app.config['COUNT'] += 1
             return send_file(fp,as_attachment=True,attachment_filename='%s.zip'%filename.split('.')[0])
@@ -61,6 +68,18 @@ def upload_file():
         return 'Completing %s document conversions'%app.config['COUNT']
     return "unknow error", 500
 
+def pdf2pdf(pdf2_path):
+    files = {'file': open(pdf2_path, 'rb')}
+    req = requests.post(PDF2PDF, files=files)
+    # 转换超时
+    if req.status_code == 403:
+        return False
+    elif req.status_code != 200:
+        print(req.text)
+        return False
+    with open(pdf2_path,'wb')as f:
+        f.write(req.content)
+    return True
 
 def pdf2htmlEX(pdf_path,command):
     out_folder_uuid =  str(uuid.uuid4())
