@@ -5,8 +5,6 @@ from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
 import requests
-import pychrome
-import base64
 
 app = Flask(__name__)
 
