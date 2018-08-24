@@ -8,6 +8,7 @@ import requests
 
 app = Flask(__name__)
 
+TIMEOUT = int(os.environ.get('TIMEOUT',60*60*24))
 POOL_SIZE = os.environ.get('POOL_SIZE',1)
 # chrome 提前转换 pdf
 PDF2PDF = os.environ.get('PDF2PDF')
@@ -79,6 +80,7 @@ def pdf2pdf(pdf2_path):
         f.write(req.content)
     return True
 
+
 def pdf2htmlEX(pdf_path,command):
     out_folder_uuid =  str(uuid.uuid4())
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], out_folder_uuid)
@@ -94,7 +96,7 @@ def pdf2htmlEX(pdf_path,command):
     #     ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
     # else:
     #     ret = app.config['executor_large'].submit(subprocess.check_output, cmd)
-    ret = app.config['executor_worker'].submit(subprocess.check_output, cmd)
+    ret = app.config['executor_worker'].submit(subprocess.check_output, cmd, timeout=TIMEOUT)
     ret.result()
 
     # subprocess.check_output(cmd)
