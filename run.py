@@ -46,8 +46,6 @@ def upload_file():
 
         if file and allowed_file(file.filename):
             filename = file.filename
-            print(filename)
-            return
             pdf_folder_uuid =  str(uuid.uuid4())
             pdf_floder_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_folder_uuid)
             pdf_path = os.path.join(pdf_floder_path, filename)
