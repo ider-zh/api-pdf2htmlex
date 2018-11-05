@@ -1,6 +1,6 @@
 #!/home/ider/anaconda3/bin/python
 
-import os, time, zipfile, tempfile, uuid, shutil, subprocess, json
+import os, time, zipfile, tempfile, uuid, shutil, subprocess, json,datetime
 from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
@@ -59,7 +59,7 @@ def upload_file():
             except Exception as e:
                 app.config['executor_file'].submit(shutil.rmtree, pdf_floder_path)
                 return str(e),500
-
+            remove_old_fold(app.config['UPLOAD_FOLDER'])
             app.config['COUNT'] += 1
             return send_file(fp,as_attachment=True,attachment_filename='%s.zip'%filename.split('.')[0])
             # return "ok" + command, 200
@@ -116,6 +116,15 @@ def pdf2htmlEX(pdf_path,command):
     app.config['executor_file'].submit(shutil.rmtree, folder_path)
     fp.seek(0)
     return fp
+
+def remove_old_fold(root_path):
+    for fold in os.listdir(root_path):
+        fold_path = os.path.join(root_path,fold)
+        if os.path.isdir(fold_path):
+            date = datetime.datetime.fromtimestamp(os.path.getmtime(fold_path))
+            now = datetime.datetime.now()
+            if (now - date).seconds > 32 * 60 *60:
+                app.config['executor_file'].submit(shutil.rmtree, fold_path)
 
 
 if __name__ == '__main__':
