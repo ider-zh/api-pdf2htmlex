@@ -1,10 +1,18 @@
-#!/home/ider/anaconda3/bin/python
+'''
+@Version: 0.0.1
+@Author: ider
+@Date: 2019-08-10 17:08:38
+@LastEditors: ider
+@LastEditTime: 2019-08-10 18:27:10
+@Description: 远程转换 pdf2html
+'''
 
 import os, time, zipfile, tempfile, uuid, shutil, subprocess, json,datetime
 from flask import Flask, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
 import requests
+from file_compress import compress
 
 app = Flask(__name__)
 
@@ -12,6 +20,8 @@ TIMEOUT = int(os.environ.get('TIMEOUT',60*60*24))
 POOL_SIZE = os.environ.get('POOL_SIZE',1)
 # chrome 提前转换 pdf
 PDF2PDF = os.environ.get('PDF2PDF')
+# 是否转换压缩 png 图片，html, 默认 是
+WEBP_FLAG = os.environ.get('WEBP',True)
 
 UPLOAD_FOLDER = '/tmp'
 bin = "/usr/local/bin/pdf2htmlEX"
@@ -20,8 +30,6 @@ ALLOWED_EXTENSIONS = set(['pdf',])
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['COUNT'] = 0
-# app.config['executor_large'] = ThreadPoolExecutor(max_workers=1)
-# app.config['executor_small'] = ThreadPoolExecutor(max_workers=10)
 app.config['executor_worker'] = ThreadPoolExecutor(max_workers=int(POOL_SIZE))
 
 app.config['executor_file'] = ThreadPoolExecutor(max_workers=5)
@@ -111,7 +119,8 @@ def pdf2htmlEX(pdf_path,command):
                 #  png 过滤
                 if file_name.endswith('.png') and os.path.getsize(file_path) < 10 * 1024:
                     continue
-
+                if WEBP_FLAG:
+                    file_path = compress(file_path)
                 myzip.write(file_path,arcname=file_path.replace(folder_path,'').lstrip('/'))
     app.config['executor_file'].submit(shutil.rmtree, folder_path)
     fp.seek(0)

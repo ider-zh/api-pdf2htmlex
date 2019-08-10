@@ -27,6 +27,8 @@ def remote_convert(src, dst, argv):
             with zipfile.ZipFile(fp, 'r') as myzip:
                 myzip.extractall(dst)
             return
+        else:
+            print(req.text)
     else:
         print('remote api is not available!')
         # raise Exception('remote api is not available! %s'%req.text)

@@ -1,0 +1,54 @@
+version: '2.2'
+services:
+  # pdf2htmlex_large:
+  #   build: .
+  #   #image: ider/api-pdf2htmlex
+  #   environment:
+  #     - PDF2PDF=http://pdfconv:5000/pdf2pdf
+  #     - POOL_SIZE=9
+  #   ports:
+  #     - 5001:5000
+  #   restart: always
+  #   mem_limit: 30G
+  #   memswap_limit: 800G
+  #   container_name: 'pdf2htmlEX_L'
+  #   links:
+  #     - pdfconv
+
+  # pdf2htmlex_small:
+  #   build: .
+  #   #image: ider/api-pdf2htmlex
+  #   environment:
+  #     - POOL_SIZE=10
+  #   expose:
+  #     - 5000
+  #   restart: always
+  #   mem_limit: 5G
+  #   memswap_limit: 5G
+  #   scale: 5
+
+  # pdf2htmlex-lb:
+  #   image: 'dockercloud/haproxy:latest'
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   links:
+  #     - pdf2htmlex_small
+  #   restart: always
+  #   ports:
+  #     - 5000:80
+
+  # pdfconv:
+  #   image: ider/libreoffice
+  #   restart: always
+
+  pdf2htmlex_small:
+    build: .
+    #image: ider/api-pdf2htmlex
+    environment:
+      - POOL_SIZE=10
+    ports:
+      - 5000:5000
+    restart: always
+    mem_limit: 5G
+    memswap_limit: 5G
+    scale: 1
