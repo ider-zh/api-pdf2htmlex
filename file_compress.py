@@ -3,7 +3,7 @@
 @Author: ider
 @Date: 2019-08-10 16:55:38
 @LastEditors: ider
-@LastEditTime: 2019-08-10 18:09:52
+@LastEditTime: 2019-08-11 11:09:52
 @Description: 压缩 图片和 html
 '''
 from bs4 import BeautifulSoup
@@ -11,6 +11,8 @@ import codecs
 from PIL import Image
 import io
 import os
+
+Image.MAX_IMAGE_PIXELS = None
 
 def compress_base64_img(data):
     img_data = codecs.decode(data.encode('utf8'),'base64')
