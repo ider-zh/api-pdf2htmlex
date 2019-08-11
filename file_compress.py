@@ -64,7 +64,7 @@ def compress_html(file_path):
             continue
         line = data.split(',')
         data, format = compress_base64_img(line[1])
-        img.attrs['src'] = f'data:image/{format};base64,'+data
+        img.attrs['src'] = 'data:image/'+format+';base64,'+data
         flag = 1
     if flag == 1:
         with open(file_path,'wt')as f:
