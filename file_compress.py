@@ -7,15 +7,18 @@
 @Description: 压缩 图片和 html
 '''
 from bs4 import BeautifulSoup
-import codecs
+import base64
 from PIL import Image
 import io
 import os
 
 Image.MAX_IMAGE_PIXELS = None
+IMG_REPLACE = {
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3goQDSYgDiGofgAAAslJREFUOMvtlM9LFGEYx7/vvOPM6ywuuyPFihWFBUsdNnA6KLIh+QPx4KWExULdHQ/9A9EfUodYmATDYg/iRewQzklFWxcEBcGgEplDkDtI6sw4PzrIbrOuedBb9MALD7zv+3m+z4/3Bf7bZS2bzQIAcrmcMDExcTeXy10DAFVVAQDksgFUVZ1ljD3yfd+0LOuFpmnvVVW9GHhkZAQcxwkNDQ2FSCQyRMgJxnVdy7KstKZpn7nwha6urqqfTqfPBAJAuVymlNLXoigOhfd5nmeiKL5TVTV+lmIKwAOA7u5u6Lped2BsbOwjY6yf4zgQQkAIAcedaPR9H67r3uYBQFEUFItFtLe332lpaVkUBOHK3t5eRtf1DwAwODiIubk5DA8PM8bYW1EU+wEgCIJqsCAIQAiB7/u253k2BQDDMJBKpa4mEon5eDx+UxAESJL0uK2t7XosFlvSdf0QAEmlUnlRFJ9Waho2Qghc1/U9z3uWz+eX+Wr+lL6SZfleEAQIggA8z6OpqSknimIvYyybSCReMsZ6TislhCAIAti2Dc/zejVNWwCAavN8339j27YbTg0AGGM3WltbP4WhlRWq6Q/btrs1TVsYHx+vNgqKoqBUKn2NRqPFxsbGJzzP05puUlpt0ukyOI6z7zjOwNTU1OLo6CgmJyf/gA3DgKIoWF1d/cIY24/FYgOU0pp0z/Ityzo8Pj5OTk9PbwHA+vp6zWghDC+VSiuRSOQgGo32UErJ38CO42wdHR09LBQK3zKZDDY2NupmFmF4R0cHVlZWlmRZ/iVJUn9FeWWcCCE4ODjYtG27Z2Zm5juAOmgdGAB2d3cBADs7O8uSJN2SZfl+WKlpmpumaT6Yn58vn/fs6XmbhmHMNjc3tzDGFI7jYJrm5vb29sDa2trPC/9aiqJUy5pOp4f6+vqeJ5PJBAB0dnZe/t8NBajx/z37Df5OGX8d13xzAAAAAElFTkSuQmCC':'data:image/webp;base64,UklGRugAAABXRUJQVlA4WAoAAAAQAAAAFQAAFQAAQUxQSJIAAAABgKpt+7rmxSG6kxw6ZEskohyC+8G4NEtEtp2Gx11LW3PfvvCz2QFExATgHzYmA9+yu7+qqBl3RPScUtFNiL2wMjrRnvghAJEbKjPmFfFfAoDrmIimDmgWxP8sAdgSe5k/ImEOAPLvjOR1BtzCq9RtGsKWzKMfkoNPwVkE0j3esReKS+bYAuUh0XEQ6ppi1YN/FVZQOCAwAAAAEAMAnQEqFgAWAD/N0OBmP7Ktpzf1WAPwOYlpAAA+hWoAAP7dDjNPcsLNsI+k8AAA'
+}
 
 def compress_base64_img(data):
-    img_data = codecs.decode(data.encode('utf8'),'base64')
+    img_data = base64.b64decode(data.encode('utf8'))
     img = Image.open(io.BytesIO(img_data))
     newio = io.BytesIO()
     try:
@@ -27,7 +30,7 @@ def compress_base64_img(data):
         img.save(newio,format='png',quality=10,optimize=True)
         format = 'png'
     newio.seek(0)
-    return codecs.encode(newio.read(),'base64').decode('utf8'), format
+    return base64.b64encode(newio.read()).decode('utf8'), format
 
 
 def compress(file_path):
@@ -55,7 +58,6 @@ def compress_html(file_path):
     with open(file_path,'rb')as f:
         html = f.read()
     soup = BeautifulSoup(html,'lxml')
-    flag = 0
     for img in soup.select('img'):
         data = img.attrs.get('src')
         if not data or not data.startswith('data:image'):
@@ -65,10 +67,12 @@ def compress_html(file_path):
         line = data.split(',')
         data, format = compress_base64_img(line[1])
         img.attrs['src'] = 'data:image/'+format+';base64,'+data
-        flag = 1
-    if flag == 1:
+    ret_data = str(soup)
+    for k,v in IMG_REPLACE.items():
+        ret_data = ret_data.replace(k,v)
+    if len(ret_data):
         with open(file_path,'wt')as f:
-            f.write(str(soup))
+            f.write(ret_data)
     return file_path
 
 if __name__ == '__main__':
