@@ -1,0 +1,39 @@
+name: Verify certifi mitigation
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax and lock version
+        run: |
+          python3 - <<'PY'
+          import ast
+          import json
+          for name in ('run.py', 'file_compress.py', 'scripts/refresh_certifi_ca.py'):
+              with open(name, encoding='utf-8') as src:
+                  ast.parse(src.read(), filename=name)
+          with open('Pipfile.lock', encoding='utf-8') as src:
+              lock = json.load(src)
+          assert lock['default']['certifi']['version'] == '==2026.10.19'
+          PY
+      - name: Build the legacy converter with patched CA bundle
+        run: docker build --pull --no-cache -t api-pdf2htmlex-security-check .
+      - name: Verify pip and requests trust the patched bundle
+        run: |
+          docker run --rm --entrypoint python3 api-pdf2htmlex-security-check -c '
+          import hashlib, os, certifi, pip._vendor.certifi
+          expected = os.environ["REQUESTS_CA_BUNDLE"]
+          def sha(path):
+              with open(path, "rb") as stream:
+                  return hashlib.sha256(stream.read()).hexdigest()
+          assert sha(certifi.where()) == sha(expected)
+          assert sha(pip._vendor.certifi.where()) == sha(expected)
+          print("Both certificate stores match the patched bundle")
+          '

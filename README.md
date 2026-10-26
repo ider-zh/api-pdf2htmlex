@@ -1,5 +1,35 @@
 # pdf2html 调用
 
+## 2026-10 certifi security fix
+
+`Pipfile.lock` pins `certifi==2026.10.19`, which removes trust in the
+compromised emSign CA chain (GHSA-6q48-6c7w-9gw2). It needs Python 3.7 or
+newer; the project previously specified Python 3.6.
+
+The Docker converter base image is much older. Until the base image and Python
+runtime can be migrated, the Docker build downloads the **official certifi
+2026.10.19 wheel**, verifies its SHA-256 checksum, and installs its CA bundle
+for both pip and requests, including their vendored copies. A normal package
+upgrade alone is not reliable on that old base image.
+
+Rebuild and redeploy the image to apply the fix:
+
+```sh
+docker compose build --no-cache pdf2htmlex_small
+docker compose up -d pdf2htmlex_small
+```
+
+Verify the installed certifi bundle is the one supplied by the Docker build:
+
+```sh
+docker compose exec pdf2htmlex_small python3 -c \
+  'import certifi, os; print(certifi.where()); print(os.environ["REQUESTS_CA_BUNDLE"])'
+```
+
+This is a targeted certificate-trust fix. The inherited operating system,
+Python interpreter and other old dependencies still require a separate
+modernization and security review.
+
 run.py  api 服务
 
 pdf2htmlEX 替代原有的 bin 程序

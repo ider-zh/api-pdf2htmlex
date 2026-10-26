@@ -8,10 +8,10 @@ flask = "*"
 bs4 = "*"
 pillow = "*"
 lxml = "*"
-reuqests = "*"
+requests = "*"
+certifi = "==2026.10.19"
 
 [dev-packages]
-requests = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
