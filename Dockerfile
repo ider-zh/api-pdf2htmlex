@@ -1,34 +1,25 @@
-FROM ider/pdf2htmlex
+# Ubuntu 24.04/Python development image with pdf2htmlEX and its native libs.
+# Pin the digest so deployments never pick up an unreviewed mutable image tag.
+FROM wayoyo/python-pdf2htmlex@sha256:a9f2ea87e5d7a2750652e09ae1b52a27c65f7140be2ddd5cb72ce17aeed568d1
 
-MAINTAINER ider <ider@knogen.cn>
+USER root
+WORKDIR /app
 
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+# Isolate the application from packages preinstalled by the base image.
+RUN python3 -m venv /opt/app-venv
+ENV PATH="/opt/app-venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1
 
-WORKDIR /root/api-pdf2htmlex
+COPY Pipfile Pipfile.lock ./
+RUN python -m pip install --no-cache-dir --upgrade "pip>=26.2.2,<27" "pipenv==2026.10.3" && \
+    pipenv verify && \
+    pipenv sync --system && \
+    python -m pip uninstall -y pipenv
 
-# Build from this checkout, so PR builds do not silently clone master.
 COPY . .
-
-RUN sed -i 's/security.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
-    sed -i 's/archive.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
-    apt update && \
-    apt-get -qq -y install python3-pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# The legacy converter image predates supported Python releases. Install a
-# SHA256-verified, patched Mozilla CA bundle and replace pip's vendored trust
-# bundle before making any pip HTTPS requests. Also replace requests' certifi
-# bundle after installation. This is a compatibility hotfix, not an OS upgrade.
-RUN python3 scripts/refresh_certifi_ca.py
-
-ENV REQUESTS_CA_BUNDLE=/usr/local/share/pdf2htmlex/certifi-2026.10.19.pem \
-    SSL_CERT_FILE=/usr/local/share/pdf2htmlex/certifi-2026.10.19.pem \
-    PIP_CERT=/usr/local/share/pdf2htmlex/certifi-2026.10.19.pem
-
-RUN pip3 install flask requests pillow bs4 lxml -i https://pypi.tuna.tsinghua.edu.cn/simple && \
-    python3 scripts/refresh_certifi_ca.py
+RUN python -c "import certifi, flask, lxml, PIL, requests; print('certifi:', certifi.__version__)" && \
+    command -v pdf2htmlEX
 
 EXPOSE 5000
-CMD ["python3", "run.py"]
+ENTRYPOINT []
+CMD ["python", "run.py"]

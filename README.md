@@ -1,16 +1,23 @@
 # pdf2html 调用
 
-## 2026-10 certifi security fix
+## 2026-10 security and dependency update
 
-`Pipfile.lock` pins `certifi==2026.10.19`, which removes trust in the
-compromised emSign CA chain (GHSA-6q48-6c7w-9gw2). It needs Python 3.7 or
-newer; the project previously specified Python 3.6.
+The app now targets **Python 3.12** and uses updated Flask, Requests, Pillow,
+Beautiful Soup, lxml, and certifi dependencies. `Pipfile.lock` includes
+`certifi>=2026.10.19`, which mitigates the compromised emSign certificate
+chain (GHSA-6q48-6c7w-9gw2).
 
-The Docker converter base image is much older. Until the base image and Python
-runtime can be migrated, the Docker build downloads the **official certifi
-2026.10.19 wheel**, verifies its SHA-256 checksum, and installs its CA bundle
-for both pip and requests, including their vendored copies. A normal package
-upgrade alone is not reliable on that old base image.
+The previous `ider/pdf2htmlex` base image was many years old. The Dockerfile
+now uses a pinned Ubuntu 24.04/Python base image containing pdf2htmlEX, creates
+an isolated virtual environment, and installs the locked dependencies.
+
+For local development:
+
+```sh
+pipenv sync
+pipenv run python -m unittest discover -s tests -v
+pipenv run python run.py
+```
 
 Rebuild and redeploy the image to apply the fix:
 
@@ -19,16 +26,16 @@ docker compose build --no-cache pdf2htmlex_small
 docker compose up -d pdf2htmlex_small
 ```
 
-Verify the installed certifi bundle is the one supplied by the Docker build:
+Verify the installed Python and certifi versions:
 
 ```sh
-docker compose exec pdf2htmlex_small python3 -c \
-  'import certifi, os; print(certifi.where()); print(os.environ["REQUESTS_CA_BUNDLE"])'
+docker compose exec pdf2htmlex_small python -c \
+  'import sys, certifi; print(sys.version); print(certifi.__version__)'
 ```
 
-This is a targeted certificate-trust fix. The inherited operating system,
-Python interpreter and other old dependencies still require a separate
-modernization and security review.
+The PDF conversion engine retains its native binary dependencies. Test real
+PDF conversion output in your deployment environment before replacing an
+existing production service.
 
 run.py  api 服务
 
