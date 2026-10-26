@@ -1,0 +1,37 @@
+name: Python upgrade and Docker smoke tests
+
+on:
+  pull_request:
+  push:
+    branches: [master, 'security/**']
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked dependencies
+        run: |
+          python -m pip install 'pipenv==2026.10.3'
+          pipenv verify
+          pipenv sync --system
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+  build:
+    needs: python
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build upgraded application image
+        run: docker build --pull --no-cache -t api-pdf2htmlex-security-check .
+      - name: Verify Python, certifi and conversion binary
+        run: |
+          docker run --rm --entrypoint python api-pdf2htmlex-security-check -c "import sys,certifi; assert sys.version_info >= (3,12); assert tuple(map(int,certifi.__version__.split('.'))) >= (2026,10,19)"
+          docker run --rm --entrypoint pdf2htmlEX api-pdf2htmlex-security-check --version
+          docker run --rm --entrypoint python api-pdf2htmlex-security-check -m unittest discover -s tests -v

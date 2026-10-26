@@ -24,7 +24,7 @@ PDF2PDF = os.environ.get('PDF2PDF')
 WEBP_FLAG = os.environ.get('WEBP',True)
 
 UPLOAD_FOLDER = '/tmp'
-bin = "/usr/local/bin/pdf2htmlEX"
+bin = shutil.which("pdf2htmlEX") or "/usr/local/bin/pdf2htmlEX"
 ALLOWED_EXTENSIONS = set(['pdf',])
 
 
@@ -69,7 +69,7 @@ def upload_file():
                 return str(e),500
             remove_old_fold(app.config['UPLOAD_FOLDER'])
             app.config['COUNT'] += 1
-            return send_file(fp,as_attachment=True,attachment_filename='%s.zip'%filename.split('.')[0])
+            return send_file(fp,as_attachment=True,download_name='%s.zip'%filename.split('.')[0])
             # return "ok" + command, 200
     elif request.method == 'GET':
         return 'Completing %s document conversions'%app.config['COUNT']
@@ -137,4 +137,4 @@ def remove_old_fold(root_path):
 
 
 if __name__ == '__main__':
-    app.run(debug=True,host="0.0.0.0",port=5000)
+    app.run(debug=False,host="0.0.0.0",port=5000)

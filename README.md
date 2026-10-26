@@ -1,5 +1,42 @@
 # pdf2html 调用
 
+## 2026-10 security and dependency update
+
+The app now targets **Python 3.12** and uses updated Flask, Requests, Pillow,
+Beautiful Soup, lxml, and certifi dependencies. `Pipfile.lock` includes
+`certifi>=2026.10.19`, which mitigates the compromised emSign certificate
+chain (GHSA-6q48-6c7w-9gw2).
+
+The previous `ider/pdf2htmlex` base image was many years old. The Dockerfile
+now uses a pinned Ubuntu 24.04/Python base image containing pdf2htmlEX, creates
+an isolated virtual environment, and installs the locked dependencies.
+
+For local development:
+
+```sh
+pipenv sync
+pipenv run python -m unittest discover -s tests -v
+pipenv run python run.py
+```
+
+Rebuild and redeploy the image to apply the fix:
+
+```sh
+docker compose build --no-cache pdf2htmlex_small
+docker compose up -d pdf2htmlex_small
+```
+
+Verify the installed Python and certifi versions:
+
+```sh
+docker compose exec pdf2htmlex_small python -c \
+  'import sys, certifi; print(sys.version); print(certifi.__version__)'
+```
+
+The PDF conversion engine retains its native binary dependencies. Test real
+PDF conversion output in your deployment environment before replacing an
+existing production service.
+
 run.py  api 服务
 
 pdf2htmlEX 替代原有的 bin 程序

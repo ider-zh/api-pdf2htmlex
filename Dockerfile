@@ -1,22 +1,25 @@
-FROM ider/pdf2htmlex
+# Ubuntu 24.04/Python development image with pdf2htmlEX and its native libs.
+# Pin the digest so deployments never pick up an unreviewed mutable image tag.
+FROM wayoyo/python-pdf2htmlex@sha256:a9f2ea87e5d7a2750652e09ae1b52a27c65f7140be2ddd5cb72ce17aeed568d1
 
-MAINTAINER ider <ider@knogen.cn>
+USER root
+WORKDIR /app
 
-ENV LC_ALL C.UTF-8
-ENV LANG C.UTF-8
+# Isolate the application from packages preinstalled by the base image.
+RUN python3 -m venv /opt/app-venv
+ENV PATH="/opt/app-venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1
 
-WORKDIR /root
+COPY Pipfile Pipfile.lock ./
+RUN python -m pip install --no-cache-dir --upgrade "pip>=26.2.2,<27" "pipenv==2026.10.3" && \
+    pipenv verify && \
+    pipenv sync --system && \
+    python -m pip uninstall -y pipenv
 
-RUN sed -i 's/security.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
-    sed -i 's/archive.ubuntu/mirrors.aliyun/g' /etc/apt/sources.list && \
-    apt update && \
-    apt-get -qq -y install git python3-pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip3 install flask requests pillow bs4 lxml -i https://pypi.tuna.tsinghua.edu.cn/simple 
+COPY . .
+RUN python -c "import certifi, flask, lxml, PIL, requests; print('certifi:', certifi.__version__)" && \
+    command -v pdf2htmlEX
 
-RUN git clone https://github.com/ider-zh/api-pdf2htmlex.git
-
-# COPY $PWD/* api-pdf2htmlex/
 EXPOSE 5000
-CMD python3 api-pdf2htmlex/run.py
+ENTRYPOINT []
+CMD ["python", "run.py"]
